@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch and Earn</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React Libraries -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <!-- Babel to transpile JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <!-- The root element where the React app will be mounted -->
+    <div id="root"></div>
+
+    <!-- The React code, marked as "text/babel" to be processed by Babel -->
+    <script type="text/babel">
+        // --- Data for the shows (with unique video sources) ---
+        const initialShows = [
+          { id: 1, title: "Stranger Things", desc: "A group of kids uncover supernatural mysteries in their town.", watched: false, videoSrc: "strangerthings.mp4" },
+          { id: 2, title: "Squid Game", desc: "Hundreds risk deadly games for a massive cash prize.", watched: false, videoSrc: "squidgame.mp4" },
+          { id: 3, title: "Wednesday", desc: "A dark coming-of-age series following Wednesday Addams.", watched: false, videoSrc: "wednesday.mp4" },
+          { id: 4, title: "Money Heist", desc: "A mysterious man recruits a group for the biggest heist ever.", watched: false, videoSrc: "heist.mp4" },
+          { id: 5, title: "The Witcher", desc: "A monster hunter struggles to find his place in a world.", watched: false, videoSrc: "witcher.mp4" },
+          { id: 6, title: "Black Mirror", desc: "Standalone dramas exploring the dark side of technology.", watched: false, videoSrc: "blackmirror.mp4" },
+          { id: 7, title: "The Crown", desc: "Follows the political rivalries and romance of Queen Elizabeth II's reign.", watched: false, videoSrc: "crown.mp4" },
+        ];
+
+        // --- SVG Icon for Notification ---
+        const CheckmarkIcon = () => (
+            <svg width="21" height="21" viewBox="0 0 16 16" style={{ display: 'block' }}>
+                <circle cx="8" cy="8" r="8" fill="#44ed9c" />
+                <path d="M5.5 9.2 7.4 11 11 6.8" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+        );
+
+        // --- Notification Component ---
+        const Notification = ({ notification, onEnd }) => {
+            const [content, setContent] = React.useState(null);
+            const [isExiting, setIsExiting] = React.useState(false);
+
+            React.useEffect(() => {
+                if (notification && notification.id !== content?.id) {
+                    if (content) {
+                        setIsExiting(true);
+                        const timer = setTimeout(() => {
+                            setContent(notification);
+                            setIsExiting(false);
+                        }, 400);
+                        return () => clearTimeout(timer);
+                    } else {
+                        setContent(notification);
+                    }
+                }
+            }, [notification, content]);
+
+            React.useEffect(() => {
+                if (content && !isExiting) {
+                    const timer = setTimeout(() => {
+                        setIsExiting(true);
+                        const clearTimer = setTimeout(() => {
+                            setContent(null);
+                            setIsExiting(false);
+                            onEnd();
+                        }, 400);
+                        return () => clearTimeout(clearTimer);
+                    }, 3400);
+
+                    return () => clearTimeout(timer);
+                }
+            }, [content, isExiting, onEnd]);
+
+            const isVisible = content && !isExiting;
+
+            if (!content) {
+                return null;
+            }
+
+            return (
+                <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 w-[95vw] max-w-md transition-all duration-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
+                    <div className="bg-slate-800/80 backdrop-blur-lg rounded-2xl border-2 border-yellow-300/50 shadow-2xl shadow-black/50 p-4 flex items-start space-x-4">
+                        <div className="bg-gradient-to-br from-green-400 to-teal-500 rounded-full p-1 flex-shrink-0 mt-1">
+                            <CheckmarkIcon />
+                        </div>
+                        <div className="flex-grow">
+                            <h3 className="font-bold text-yellow-300 text-lg">{content.title}</h3>
+                            <p className="text-white text-xl font-semibold">
+                                You've earned a reward for watching!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Show Card Component ---
+        const ShowCard = ({ show, onWatch }) => {
+            const [canClaimReward, setCanClaimReward] = React.useState(false);
+
+            const handleVideoPlay = () => {
+                if (!show.watched) {
+                    setCanClaimReward(true);
+                }
+            };
+
+            return (
+                <div className="bg-slate-800/60 backdrop-blur-md rounded-3xl border border-slate-700/50 shadow-lg overflow-hidden transition-transform duration-300">
+                    <div style={{ position: 'relative', paddingTop: '56.25%' }}>
+                        <video
+                            controls
+                            onPlay={handleVideoPlay}
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                            poster={`https://placehold.co/600x338/1a1a1a/ffffff?text=${encodeURIComponent(show.title)}`}
+                            src={show.videoSrc}
+                        >
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    <div className="p-5 text-center">
+                        <h3 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-red-600 mb-2">{show.title}</h3>
+                        <p className="text-slate-300 mb-4 h-12">{show.desc}</p>
+                        {show.watched ? (
+                            <button disabled className="w-full max-w-xs mx-auto py-3 px-6 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 text-yellow-400 font-bold text-lg cursor-not-allowed opacity-70">
+                                ✅ Reward Received!
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => onWatch(show.id)}
+                                disabled={!canClaimReward}
+                                className={`w-full max-w-xs mx-auto py-3 px-6 rounded-xl text-white font-bold text-lg transition-all duration-300 ${
+                                    !canClaimReward
+                                        ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                                        : 'bg-gradient-to-r from-red-600 to-yellow-400 shadow-lg hover:shadow-red-500/50 transform hover:scale-105'
+                                }`}
+                            >
+                                {canClaimReward ? 'Claim Reward!' : 'Play video to Earn'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        function App() {
+            const [shows, setShows] = React.useState(() => {
+                const shuffledShows = [...initialShows];
+                for (let i = shuffledShows.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledShows[i], shuffledShows[j]] = [shuffledShows[j], shuffledShows[i]];
+                }
+                return shuffledShows;
+            });
+            
+            const [notification, setNotification] = React.useState(null);
+
+            const handleWatch = (id) => {
+                const show = shows.find(s => s.id === id);
+
+                if (show && !show.watched) {
+                    setShows(shows.map(s => s.id === id ? { ...s, watched: true } : s));
+                    setNotification({ title: show.title, id: Date.now() });
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900/50 to-slate-900 text-white font-sans">
+                    <header className="text-center py-8">
+                        <h1 className="text-5xl md:text-6xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-red-600 animate-pulse">
+                            WATCH AND EARN
+                        </h1>
+                    </header>
+
+                    <main className="max-w-4xl mx-auto px-4 pb-12">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                            {shows.map(show => (
+                                <ShowCard key={show.id} show={show} onWatch={handleWatch} />
+                            ))}
+                        </div>
+                    </main>
+
+                    <Notification notification={notification} onEnd={() => setNotification(null)} />
+                </div>
+            );
+        }
+
+        // --- Render the App to the DOM ---
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
